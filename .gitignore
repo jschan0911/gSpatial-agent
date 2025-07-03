@@ -4,3 +4,4 @@ venv/
 __pycache__/
 agent/__pycache__/
 neo4j_cypher_agent.py
+secrets.toml
