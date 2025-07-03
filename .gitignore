@@ -1,0 +1,6 @@
+venv/
+.env
+.DS_Store
+__pycache__/
+agent/__pycache__/
+neo4j_cypher_agent.py
