@@ -5,37 +5,76 @@ import json
 from dotenv import load_dotenv
 import traceback
 
-# 환경 변수 로드
+# Load environment variables
 load_dotenv()
 
-# 페이지 설정
+# Page configuration
 st.set_page_config(layout="wide")
 st.title("gSpatial LangGraph Agent")
 
-# 상태 메시지를 위한 컨테이너
+# Container for status messages
 status_container = st.container()
 
-# 상단 고정 영역 (질문 입력)
+# Top fixed area (Question input)
 with st.container():
     cols = st.columns([5, 1])
     with cols[0]:
-        st.subheader("질문 입력")
+        st.subheader("Enter Your Question")
     with cols[1]:
         st.write("")
-        run_btn = st.button("실행", type="primary", use_container_width=True)
+        run_btn = st.button("Run", type="primary", use_container_width=True)
     
+    # Example queries covering different spatial operations
+    example_queries = [
+        # Distance queries
+        "What is the distance between Greenwich Village Elem School and Loisaida?",
+        "What is the distance between Mount Sinai School of Medicine and Nyct 207th St Subway Shops and Yard?",
+        
+        # Buffer queries
+        "Create a 20.0 meter buffer around General Theological Smry.",
+        "Create a 15.0 meter buffer around Museo del Barrio.",
+        
+        # Topological operation queries
+        "Does Grand Central Trmnl lie within Museo del Barrio?",
+        "Does Hunter Colg lie within Riverside Park?",
+        
+        # Set operation queries
+        "What is the intersection of United Nations Headquarters and Madison Square Gardens & Penn Sta?",
+        "What is the union of Rockefeller Univ and Saint Vincent Hosp?",
+        
+        # Single operation queries
+        "What is the area of Matthews-Palmer Playground?",
+        "What is the area of Morningside Park?"
+    ]
+    
+    # Display example queries as clickable buttons
+    st.write("Try these examples:")
+    cols = st.columns(2)  # Create 2 columns for better layout
+    for i, query in enumerate(example_queries):
+        if cols[i % 2].button(query, use_container_width=True, key=f"example_{i}"):
+            st.session_state.user_input = query
+    
+    # Initialize session state for user input if it doesn't exist
+    if 'user_input' not in st.session_state:
+        st.session_state.user_input = ""
+    
+    # Text area for user input
     user_input = st.text_area(
-        "공간 쿼리를 입력하세요:", 
-        "", 
+        "Enter your spatial query:", 
+        value=st.session_state.user_input,
         height=100, 
         label_visibility="collapsed",
-        placeholder="예: 서울시 강남구의 공원을 찾아줘"
+        placeholder="Example: Find parks in Gangnam District, Seoul"
     )
+    
+    # Update session state when user types in the text area
+    if user_input != st.session_state.user_input:
+        st.session_state.user_input = user_input
 
-# 결과 영역 (하단)
+# Results area (bottom)
 if run_btn:
     if not user_input.strip():
-        st.warning("질문을 입력해주세요.")
+        st.warning("Please enter your question.")
     else:
         try:
             # Clear previous results
@@ -45,9 +84,9 @@ if run_btn:
             
             # Initialize workflow
             with status_container:
-                st.subheader("실행 결과")
-                with st.status("워크플로우 실행 중...", expanded=True) as status:
-                    status.write("워크플로우를 초기화하는 중...")
+                st.subheader("Execution Results")
+                with st.status("Running workflow...", expanded=True) as status:
+                    status.write("Initializing workflow...")
                     workflow = create_workflow()
                     
                     # Initialize state
@@ -63,11 +102,11 @@ if run_btn:
                     
                     # Run workflow steps
                     steps = [
-                        ("classify_query", "1. 질문 유형 분석 중..."),
-                        ("extract_entities", "2. 엔티티 추출 중..."),
-                        ("generate_cypher", "3. Cypher 쿼리 생성 중..."),
-                        ("execute_cypher", "4. 쿼리 실행 중..."),
-                        ("generate_response", "5. 응답 생성 중...")
+                        ("classify_query", "1. Analyzing question type..."),
+                        ("extract_entities", "2. Extracting entities..."),
+                        ("generate_cypher", "3. Generating Cypher query..."),
+                        ("execute_cypher", "4. Executing query..."),
+                        ("generate_response", "5. Generating response...")
                     ]
                     
                     for step, message in steps:
@@ -79,7 +118,7 @@ if run_btn:
                             result = classify_query(state)
                             state.update(result)
                             
-                            with st.expander("🔍 질문 유형 분석 결과", expanded=True):
+                            with st.expander("🔍 Question Type Analysis", expanded=True):
                                 st.json({"query_type": state["query_type"]})
                         
                         elif step == "extract_entities":
@@ -87,7 +126,7 @@ if run_btn:
                             result = extract_entities(state)
                             state.update(result)
                             
-                            with st.expander("🔍 추출된 엔티티", expanded=True):
+                            with st.expander("🔍 Extracted Entities", expanded=True):
                                 st.json({"entities": state["entities"]})
                         
                         elif step == "generate_cypher":
@@ -95,7 +134,7 @@ if run_btn:
                             result = generate_cypher(state)
                             state.update(result)
                             
-                            with st.expander("🔍 생성된 Cypher 쿼리", expanded=True):
+                            with st.expander("🔍 Generated Cypher Query", expanded=True):
                                 st.code(state["cypher_query"], language="cypher")
                         
                         elif step == "execute_cypher":
@@ -103,9 +142,9 @@ if run_btn:
                             result = execute_cypher(state)
                             state.update(result)
                             
-                            with st.expander("🔍 쿼리 실행 결과", expanded=True):
+                            with st.expander("🔍 Query Execution Results", expanded=True):
                                 if state.get("error"):
-                                    st.error(f"❌ 쿼리 실행 오류: {state['error']}")
+                                    st.error(f"❌ Query execution error: {state['error']}")
                                 else:
                                     st.json(state["query_result"])
                         
@@ -114,7 +153,7 @@ if run_btn:
                             result = generate_response(state)
                             state.update(result)
                             
-                            with st.expander("🔍 질문 유형 분석 결과", expanded=True):
+                            with st.expander("🔍 Question Type Analysis", expanded=True):
                                 st.json({"query_type": state["query_type"]})
                         
                         elif step == "extract_entities":
@@ -122,7 +161,7 @@ if run_btn:
                             result = extract_entities(state)
                             state.update(result)
                             
-                            with st.expander("🔍 추출된 엔티티", expanded=True):
+                            with st.expander("🔍 Extracted Entities", expanded=True):
                                 st.json({"entities": state["entities"]})
                         
                         elif step == "generate_cypher":
@@ -130,7 +169,7 @@ if run_btn:
                             result = generate_cypher(state)
                             state.update(result)
                             
-                            with st.expander("🔍 생성된 Cypher 쿼리", expanded=True):
+                            with st.expander("🔍 Generated Cypher Query", expanded=True):
                                 st.code(state["cypher_query"], language="cypher")
                         
                         elif step == "execute_cypher":
@@ -138,9 +177,9 @@ if run_btn:
                             result = execute_cypher(state)
                             state.update(result)
                             
-                            with st.expander("🔍 쿼리 실행 결과", expanded=True):
+                            with st.expander("🔍 Query Execution Results", expanded=True):
                                 if state.get("error"):
-                                    st.error(f"❌ 쿼리 실행 오류: {state['error']}")
+                                    st.error(f"❌ Query execution error: {state['error']}")
                                 else:
                                     st.json(state["query_result"])
                         
@@ -150,20 +189,20 @@ if run_btn:
                             state.update(result)
                     
                     # Display final results
-                    status.write("### ✅ 처리 완료!")
+                    status.write("### ✅ Processing complete!")
                     
                     # Show final response in a nice card
                     st.divider()
-                    st.subheader("💬 최종 응답")
-                    st.info(state.get("response", "응답을 생성할 수 없습니다."), icon="💡")
+                    st.subheader("💬 Final Response")
+                    st.info(state.get("response", "Unable to generate a response."), icon="💡")
                     
                     # Show debug info in an expander
-                    with st.expander("🔧 최종 상태 (디버그)", expanded=False):
-                        st.write("#### 상태 요약")
+                    with st.expander("🔧 Final State (Debug)", expanded=False):
+                        st.write("#### State Summary")
                         st.json({k: v for k, v in state.items() if k != "query_result"})
                         
                         if state.get("query_result"):
-                            st.write("#### 쿼리 결과 샘플 (첫 번째 항목)")
+                            st.write("#### Query Result Sample (First Item)")
                             sample = (state["query_result"][:1] 
                                      if isinstance(state["query_result"], list) and len(state["query_result"]) > 0 
                                      else state["query_result"])
@@ -171,6 +210,6 @@ if run_btn:
         
         except Exception as e:
             with status_container:
-                st.error(f"❌ 오류 발생: {str(e)}")
-                with st.expander("자세한 오류 정보", expanded=False):
+                st.error(f"❌ An error occurred: {str(e)}")
+                with st.expander("Detailed error information", expanded=False):
                     st.text(traceback.format_exc())
