@@ -10,7 +10,25 @@ load_dotenv()
 
 # Page configuration
 st.set_page_config(layout="wide")
-st.title("gSpatial LangGraph Agent")
+
+# Header with title and contact icons
+col1, col2 = st.columns([0.9, 0.1])
+with col1:
+    st.title("gSpatial LangGraph Agent")
+with col2:
+    st.markdown(
+        """
+        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 15px;">
+            <a href="https://www.linkedin.com/in/seungchan-jeong-spatial-graph/" target="_blank" title="LinkedIn Profile">
+                <img src="https://img.icons8.com/color/48/000000/linkedin.png" width="28" height="28"/>
+            </a>
+            <a href="mailto:jschan0911@snu.ac.kr" title="Email">
+                <img src="https://img.icons8.com/color/48/000000/gmail.png" width="28" height="28"/>
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Container for status messages
 status_container = st.container()
@@ -28,7 +46,7 @@ with st.container():
     example_queries = [
         # Distance queries
         "What is the distance between Greenwich Village Elem School and Loisaida?",
-        "What is the distance between Mount Sinai School of Medicine and Nyct 207th St Subway Shops and Yard?",
+        "What is the distance between Mount Sinai School of Medicine and Loisaida?",
         
         # Buffer queries
         "Create a 20.0 meter buffer around General Theological Smry.",
@@ -39,7 +57,7 @@ with st.container():
         "Does Hunter Colg lie within Riverside Park?",
         
         # Set operation queries
-        "What is the intersection of United Nations Headquarters and Madison Square Gardens & Penn Sta?",
+        "What is the intersection of United Nations Headquarters and Saint Vincent Hosp?",
         "What is the union of Rockefeller Univ and Saint Vincent Hosp?",
         
         # Single operation queries
