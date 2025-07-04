@@ -101,9 +101,8 @@ MATCH (n)
 WITH collect(n) AS n_list
 MATCH (m)
 WITH n_list, collect(m) AS m_list
-CALL gspatial.operation('WITHIN', [n_list, m_list]) YIELD n, m, result
-WHERE result = true
-RETURN n, m
+CALL gspatial.operation('WITHIN', [n_list, m_list]) YIELD result
+RETURN result
 
 2) Set
 MATCH (n)
@@ -116,14 +115,14 @@ RETURN result
 3) Buffer
 MATCH (n)
 WITH collect(n) AS n_list
-CALL gspatial.operation('BUFFER', [n_list, [distance]]) YIELD n, result
+CALL gspatial.operation('BUFFER', [n_list, [distance]]) YIELD result
 RETURN result
 * Distance must always be in decimal format (e.g., 5.0). Always include .0 even for integer values.
 
 4) Single
 MATCH (n)
 WITH collect(n) AS n_list
-CALL gspatial.operation('AREA', [n_list]) YIELD n, result
+CALL gspatial.operation('AREA', [n_list]) YIELD result
 RETURN result
 
 5) Distance
