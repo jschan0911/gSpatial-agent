@@ -32,6 +32,61 @@ def get_neo4j_connection():
         )
     )
 
+def get_neo4j_schema():
+    """
+    Retrieve schema information from Neo4j including labels, relationship types, and properties.
+    Returns a dictionary with schema information.
+    """
+    schema = {
+        "labels": [],
+        "relationshipTypes": [],
+        "propertyKeys": [],
+        "nodeProperties": {},
+        "relProperties": {}
+    }
+    
+    try:
+        driver = get_neo4j_connection()
+        with driver.session() as session:
+            # Get basic schema info
+            schema["labels"] = [record["label"] for record in session.run("CALL db.labels()")]
+            schema["relationshipTypes"] = [record["relationshipType"] for record in session.run("CALL db.relationshipTypes()")]
+            schema["propertyKeys"] = [record["propertyKey"] for record in session.run("CALL db.propertyKeys()")]
+            
+            # Get node properties
+            for label in schema["labels"]:
+                query = f"""
+                MATCH (n:`{label}`)
+                WITH DISTINCT keys(n) as keys
+                UNWIND keys as key
+                RETURN collect(distinct key) as properties
+                """
+                result = session.run(query)
+                schema["nodeProperties"][label] = result.single()["properties"] if result.peek() else []
+            
+            # Get relationship properties
+            for rel_type in schema["relationshipTypes"]:
+                query = f"""
+                MATCH ()-[r:`{rel_type}`]->()
+                WITH DISTINCT keys(r) as keys
+                UNWIND keys as key
+                RETURN collect(distinct key) as properties
+                """
+                result = session.run(query)
+                schema["relProperties"][rel_type] = result.single()["properties"] if result.peek() else []
+                
+        return schema
+        
+    except Exception as e:
+        print(f"Warning: Could not retrieve schema information: {str(e)}")
+        return schema
+    finally:
+        if 'driver' in locals():
+            driver.close()
+
+# Cache the schema at module level
+neo4j_schema = get_neo4j_schema()
+
 def classify_query(state: Dict[str, Any]) -> Dict[str, Any]:
     """Classify the type of the user's query."""
     chain = classification_prompt | llm
@@ -73,12 +128,13 @@ def generate_cypher(state: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(entities_str, dict):
         entities_str = json.dumps(entities_str, ensure_ascii=False, indent=2)
     
-    # Prepare the prompt input
+    # Prepare the prompt input with schema
+    schema_str = json.dumps(neo4j_schema, ensure_ascii=False, indent=2)
     prompt_input = {
         "query_type": state["query_type"],
         "entities": entities_str,
         "input": state["question"],
-        "schema": ""  # Add schema if needed
+        "schema": schema_str
     }
     
     # Add error context if this is a retry
