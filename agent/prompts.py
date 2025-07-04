@@ -1,102 +1,102 @@
 from langchain_core.prompts import PromptTemplate
 
-# gSpatial operation 설명
+# gSpatial operation documentation
 gspatial_summary = """
-사용 가능한 gSpatial operation 유형:
+Available gSpatial operation types:
 
-1. Topological Operation: 두 객체 간의 공간적 관계를 검사
-   - 사용 가능한 operation 이름:
-     • CONTAINS: 첫 번째 객체가 두 번째 객체를 포함하는지 검사
-     • COVERED_BY: 첫 번째 객체가 두 번째 객체에 의해 커버되는지 검사
-     • CROSSES: 두 객체가 교차하는지 검사
-     • DISJOINT: 두 객체가 서로 떨어져 있는지 검사
-     • EQUALS: 두 객체가 동일한지 검사
-     • INTERSECTS: 두 객체가 하나라도 교차하는지 검사
-     • OVERLAPS: 두 객체가 부분적으로 겹치는지 검사
-     • TOUCHES: 두 객체가 경계에서 만나는지 검사
-     • WITHIN: 첫 번째 객체가 두 번째 객체 내부에 있는지 검사
-   - 인자: operation name(str), n_list(list), m_list(list)
-   - 출력: n(node), m(node), result(bool)
+1. Topological Operation: Checks spatial relationships between two objects
+   - Available operations:
+     • CONTAINS: Checks if the first object contains the second object
+     • COVERED_BY: Checks if the first object is covered by the second object
+     • CROSSES: Checks if two objects cross each other
+     • DISJOINT: Checks if two objects are disjoint
+     • EQUALS: Checks if two objects are equal
+     • INTERSECTS: Checks if two objects intersect
+     • OVERLAPS: Checks if two objects overlap
+     • TOUCHES: Checks if two objects touch at their boundaries
+     • WITHIN: Checks if the first object is within the second object
+   - Parameters: operation name(str), n_list(list), m_list(list)
+   - Output: n(node), m(node), result(bool)
 
-2. Set Operation: 두 객체 집합에 대한 집합 연산
-   - 사용 가능한 operation 이름:
-     • INTERSECTION: 교집합 반환
-     • UNION: 합집합 반환
-     • DIFFERENCE: 차집합(첫 번째 - 두 번째) 반환
-   - 인자: operation name(str), n_list(list), m_list(list)
-   - 출력: n(node), m(node), result(WKT geometry)
+2. Set Operation: Set operations on two sets of objects
+   - Available operations:
+     • INTERSECTION: Returns intersection
+     • UNION: Returns union
+     • DIFFERENCE: Returns difference (first - second)
+   - Parameters: operation name(str), n_list(list), m_list(list)
+   - Output: n(node), m(node), result(WKT geometry)
 
-3. Numeric Parameter Operation (BUFFER): 거리 기반 버퍼 생성
-   - 사용 가능한 operation 이름: BUFFER
-   - distance 파라미터는 항상 소수점 형식(예: 5.0)으로 표현해야 함. 정수 입력 시에도 반드시 .0을 붙이세요.
-   - 인자: 'BUFFER', n_list(list), param(list<double>)
-   - 출력: n(node), result(WKT geometry)
+3. Numeric Parameter Operation (BUFFER): Creates distance-based buffer
+   - Available operation: BUFFER
+   - Distance parameter must always be in decimal format (e.g., 5.0). Always include .0 even for integer values.
+   - Parameters: 'BUFFER', n_list(list), param(list<double>)
+   - Output: n(node), result(WKT geometry)
 
-4. Single Parameter Operation: 단일 객체 속성 또는 변환 계산
-   - 사용 가능한 operation 이름:
-     • AREA: 면적 계산
-     • BBOX: 최소 경계 사각형 계산
-     • BOUNDARY: 객체의 경계선 계산
-     • CENTROID: 중심점 계산
-     • CONVEX_HULL: 볼록 껍질 계산
-     • DIMENSION: 차원 정보(0:점,1:선,2:면)
-     • ENVELOPE: 객체의 외접 사각형 계산
-     • LENGTH: 길이(선스트링) 계산
-     • SRID: 공간 참조 시스템 ID 반환
-   - 인자: operation name(str), n_list(list)
-   - 출력: n(node), result(geometry or numeric)
+4. Single Parameter Operation: Calculates properties or transformations of a single object
+   - Available operations:
+     • AREA: Calculates area
+     • BBOX: Calculates minimum bounding box
+     • BOUNDARY: Calculates boundary of the object
+     • CENTROID: Calculates centroid
+     • CONVEX_HULL: Calculates convex hull
+     • DIMENSION: Returns dimension information (0:point, 1:line, 2:polygon)
+     • ENVELOPE: Calculates bounding rectangle
+     • LENGTH: Calculates length (for linestrings)
+     • SRID: Returns spatial reference system ID
+   - Parameters: operation name(str), n_list(list)
+   - Output: n(node), result(geometry or numeric)
 
-5. Measurement Operation (DISTANCE): 두 객체 간 거리를 측정
-   - 사용 가능한 operation 이름:
-     • DISTANCE: 두 객체 간 최단 거리 계산
-   - 인자: 'DISTANCE', n_list(list), m_list(list)
-   - 출력: n(node), m(node), result(double)
+5. Measurement Operation (DISTANCE): Measures distance between two objects
+   - Available operation:
+     • DISTANCE: Calculates the shortest distance between two objects
+   - Parameters: 'DISTANCE', n_list(list), m_list(list)
+   - Output: n(node), m(node), result(double)
 """
 
-# 1) 유형 분류 프롬프트
+# 1) Type Classification Prompt
 classification_prompt = PromptTemplate(
     input_variables=["input", "schema"],
     template="""
-아래 질문을 분석하여, 가장 적합한 gSpatial operation 유형을 선택하세요.
+Analyze the question below and select the most appropriate gSpatial operation type.
 {gspatial_summary}
-스키마:
+Schema:
 {schema}
-질문: {input}
-유형 (TOPOLOGICAL, SET, BUFFER, SINGLE, DISTANCE 중 하나로):
+Question: {input}
+Type (choose one from TOPOLOGICAL, SET, BUFFER, SINGLE, DISTANCE):
 """.replace("{gspatial_summary}", gspatial_summary)
 )
 
-# 2) 엔티티 추출 프롬프트
+# 2) Entity Extraction Prompt
 entity_extraction_prompt = PromptTemplate(
     input_variables=["input"],
     template="""
-아래 질문에서 공간 쿼리와 관련된 모든 엔티티(위치명, 거리, 관계 등)를 추출하세요.
+Extract all entities related to the spatial query from the following question.
 
-질문: {input}
+Question: {input}
 
-추출할 엔티티 유형:
-- 위치명 (예: '서울역', '강남구', '한강')
-- 거리 (예: '1km', '500m')
-- 공간 관계 (예: '안에', '근처에', '에서 가장 가까운')
-- 기타 관련 속성
+Entity types to extract:
+- Location names (e.g., 'Seoul Station', 'Gangnam District', 'Han River')
+- Distances (e.g., '1km', '500m')
+- Spatial relationships (e.g., 'inside', 'near', 'closest to')
+- Other relevant attributes
 
-JSON 형식으로 출력하세요. 각 엔티티는 'type'과 'value' 필드를 가져야 합니다.
+Output in JSON format. Each entity should have 'type' and 'value' fields.
 """
 )
 
-# 3) Cypher 생성 프롬프트
+# 3) Cypher Generation Prompt
 cypher_generation_prompt = PromptTemplate(
     input_variables=["query_type", "entities", "schema", "input"],
     template="""
-주어진 정보를 바탕으로 gSpatial operation 프로시저를 호출하는 Cypher 쿼리를 작성하세요.
-- 질문: {input}
-- 유형: {query_type}
-- 엔티티: {entities}
-- 스키마: {schema}
+Write a Cypher query that calls the gSpatial operation procedure based on the given information.
+- Question: {input}
+- Type: {query_type}
+- Entities: {entities}
+- Schema: {schema}
 
-각 유형별 구조 예시를 참고하세요:
+Refer to the following example structures for each type:
 
-1) Topological
+1) Topological Operation
 MATCH (n)
 WITH collect(n) AS n_list
 MATCH (m)
@@ -118,7 +118,7 @@ MATCH (n)
 WITH collect(n) AS n_list
 CALL gspatial.operation('BUFFER', [n_list, [distance]]) YIELD n, result
 RETURN result
-* distance는 항상 소수점 형식(예: 5.0)으로 표현해야 함. 정수 입력 시에도 반드시 .0을 붙이세요.
+* Distance must always be in decimal format (e.g., 5.0). Always include .0 even for integer values.
 
 4) Single
 MATCH (n)
@@ -134,26 +134,28 @@ WITH n_list, collect(m) AS m_list
 CALL gspatial.operation('DISTANCE', [n_list, m_list]) YIELD n, m, result
 RETURN n, m, result
 
-위 예시 패턴을 따라, Cypher 쿼리만 출력하세요.
+Output only the Cypher query, following the example patterns.
 """
 )
 
-# 4) 응답 생성 프롬프트
+# 4) Response Generation Prompt
 response_generation_prompt = PromptTemplate(
     input_variables=["question", "query", "result"],
     template="""
-사용자의 질문과 실행된 쿼리, 그리고 그 결과가 주어집니다. 이를 바탕으로 사용자에게 친절하게 답변을 생성하세요.
+You are given a user's question, the executed query, and its results. Generate a clear and helpful response in English.
 
-질문: {question}
-실행된 쿼리: {query}
-쿼리 결과: {result}
+Question: {question}
+Executed Query: {query}
+Query Results: {result}
 
-답변은 한국어로 작성하고, 다음 사항을 포함하세요:
-1. 질문에 대한 직접적인 답변
-2. 쿼리 결과에서 도출된 주요 정보
-3. 필요한 경우 추가 설명이나 맥락
+Your response should:
+1. Provide a direct answer to the question
+2. Highlight key information from the query results
+3. Include additional context or explanations if needed
+4. Be concise and professional
+5. Format numbers and data appropriately
 
-답변:
+Response:
 """
 )
 
