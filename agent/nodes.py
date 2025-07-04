@@ -49,8 +49,8 @@ def get_neo4j_schema():
         driver = get_neo4j_connection()
         with driver.session() as session:
             # Get basic schema info
-            schema["labels"] = [record["label"] for record in session.run("CALL db.labels()")]
-            schema["relationshipTypes"] = [record["relationshipType"] for record in session.run("CALL db.relationshipTypes()")]
+            # schema["labels"] = [record["label"] for record in session.run("CALL db.labels()")]
+            # schema["relationshipTypes"] = [record["relationshipType"] for record in session.run("CALL db.relationshipTypes()")]
             schema["propertyKeys"] = [record["propertyKey"] for record in session.run("CALL db.propertyKeys()")]
             
             # Get node properties
@@ -216,7 +216,7 @@ def execute_cypher(state: Dict[str, Any]) -> Dict[str, Any]:
 def generate_response(state: Dict[str, Any]) -> Dict[str, Any]:
     """Generate a natural language response based on the query results."""
     if state.get("error"):
-        return {"response": f"죄송합니다. 쿼리 실행 중 오류가 발생했습니다: {state['error']}"}
+        return {"response": f"An error occurred while executing the query: {state['error']}"}
     
     chain = response_generation_prompt | llm
     
